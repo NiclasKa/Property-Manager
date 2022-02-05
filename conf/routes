@@ -1,0 +1,20 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Application home page
+GET     /                           controllers.HomeController.index()
+
+# Swagger
+GET		/swagger.json				controllers.ApiHelpController.getResources
+GET		/docs/swagger-ui/*file		controllers.Assets.at(path:String="/public/lib/swagger-ui", file:String)
+
+# Routes for viewing, editting and deleting properties
+GET		/properties					controllers.PropertyController.index()
+GET		/properties/:id				controllers.PropertyController.findById(id : Integer)
+PUT		/properties/edit/:id		controllers.PropertyController.edit(id : Integer)
+POST	/properties					controllers.PropertyController.add()
+DELETE	/properties/:id				controllers.PropertyController.delete(id : Integer)
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
