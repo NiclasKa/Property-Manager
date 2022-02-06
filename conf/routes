@@ -6,10 +6,10 @@
 GET     /                           controllers.HomeController.index()
 
 # Swagger
-GET		/swagger.json				controllers.ApiHelpController.getResources
-GET		/docs/swagger-ui/*file		controllers.Assets.at(path:String="/public/lib/swagger-ui", file:String)
+GET		/api-docs					controllers.ApiHelpController.getResources
+GET		/api-docs/swagger-ui/*file		controllers.Assets.at(path:String="/public/lib/swagger-ui", file:String)
 
-# Routes for viewing, editting and deleting properties
+# Routes for viewing, editing and deleting properties
 GET		/properties					controllers.PropertyController.index()
 GET		/properties/:id				controllers.PropertyController.findById(id : Integer)
 PUT		/properties/edit/:id		controllers.PropertyController.edit(id : Integer)
