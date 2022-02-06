@@ -10,7 +10,7 @@ GET		/api-docs					controllers.ApiHelpController.getResources
 GET		/api-docs/swagger-ui/*file		controllers.Assets.at(path:String="/public/lib/swagger-ui", file:String)
 
 # Routes for viewing, editing and deleting properties
-GET		/properties					controllers.PropertyController.index()
+GET		/properties					controllers.PropertyController.properties()
 GET		/properties/:id				controllers.PropertyController.findById(id : Integer)
 PUT		/properties/edit/:id		controllers.PropertyController.edit(id : Integer)
 POST	/properties					controllers.PropertyController.add()

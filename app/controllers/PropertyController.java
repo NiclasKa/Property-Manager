@@ -7,6 +7,14 @@ import play.mvc.*;
 
 import models.Property;
 
+import java.util.List;
+import java.util.ArrayList;
+import play.db.ebean.Transactional;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import com.fasterxml.jackson.databind.ObjectMapper; 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -19,8 +27,25 @@ import io.swagger.annotations.ApiImplicitParam;
 /**
  * This controller contains CRUD methods for Properties.
  */
- @Api(value = "/properties", produces = "application/json")
+@Api(value = "/properties", produces = "application/json")
 public class PropertyController extends Controller {
+	
+	@Inject
+    FormFactory formFactory;
+	
+	@Inject
+	ObjectMapper mapper = new ObjectMapper();
+	
+	/*
+	 * Encountered a problem with Ebean and Swagger.
+	 * The following hack will remove _ebean_intercept from the request, so it can be validated accordingly.
+	 */
+	public JsonNode parseBody(JsonNode body) {
+        ObjectNode object = body.deepCopy();
+        object.remove("_ebean_intercept");
+        JsonNode parsedBody = mapper.valueToTree(object); 
+        return parsedBody;
+	}
 	
 	@ApiOperation(
 		consumes = "application/json",
@@ -28,11 +53,14 @@ public class PropertyController extends Controller {
 		httpMethod = "GET",
 		response = Property.class
 	)
-    public Result index() {
-    	JsonNode result = null;
-    	result = Json.newObject();
-    	result = Json.parse("{\"name\":\"property\"}");
-        return ok(result);
+    public Result properties() {
+		try {
+			List<Property> properties = Property.find.all();
+	    	String jsonString = mapper.writeValueAsString(properties); 
+	        return ok(jsonString);
+		} catch (Exception e) {
+			return badRequest("fail");
+		}
     }
 	
 	@ApiOperation(
@@ -46,16 +74,78 @@ public class PropertyController extends Controller {
 	})
 	
 	public Result add() {
-		JsonNode k = request().body().asJson();
-		return ok(k);
+		try {
+	        JsonNode parsedBody = parseBody(request().body().asJson());
+			Form<Property> propertyForm = formFactory.form(Property.class).bind(parsedBody);
+			if (propertyForm.hasErrors()) {
+				return badRequest("Bad Request!");
+			}
+			Property property = propertyForm.get();
+			String jsonString = mapper.writeValueAsString(property); 
+			property.save();
+			return ok(jsonString);
+		} catch (Exception e) {
+			return badRequest(e.getMessage());
+		}
 	}
 	public Result findById(Integer id) {
 		return ok(views.html.index.render());
 	}
+	
+	@ApiOperation(
+			consumes = "application/json",
+			value = "Edit property",
+			httpMethod = "PUT",
+			response = Property.class
+	)
+	@ApiImplicitParams({
+		@ApiImplicitParam(name = "body", value = "Property", required = true, dataType = "models.Property", paramType = "body")
+	})
 	public Result edit(Integer id) {
-		return ok(views.html.index.render());
+		try {
+			Property property = Property.find.byId(id);
+	        if(property == null) {
+	            return notFound("Not found!");
+	        }
+	        JsonNode parsedBody = parseBody(request().body().asJson());
+			Form<Property> propertyForm = formFactory.form(Property.class).bind(parsedBody);
+			if (propertyForm.hasErrors()) {
+				return badRequest("Bad Request!");
+			}
+			Property updatedProperty = propertyForm.get();
+			property.name = updatedProperty.name;
+			property.address = updatedProperty.address;
+			property.postalCode = updatedProperty.postalCode;
+			property.number = updatedProperty.number;
+			property.city = updatedProperty.city;
+			property.country = updatedProperty.country;
+			property.description = updatedProperty.description;
+			property.coordinates = updatedProperty.coordinates;
+			
+			property.update();
+			
+			String jsonString = mapper.writeValueAsString(property); 
+			return ok(jsonString);
+		} catch (Exception e) {
+			return badRequest(e.getMessage());
+		}
 	}
+	
+	@ApiOperation(
+			consumes = "application/json",
+			value = "Edit property",
+			httpMethod = "DELETE"
+	)
 	public Result delete(Integer id) {
-		return ok(views.html.index.render());
+		try {
+			Property property = Property.find.byId(id);
+	        if(property == null) {
+	            return notFound("Not found!");
+	        }
+	        Boolean deleted = property.delete();
+	        return ok(deleted.toString());
+		} catch (Exception e) {
+			return badRequest(e.getMessage());
+		}
 	}
 }
