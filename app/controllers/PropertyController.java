@@ -66,6 +66,32 @@ public class PropertyController extends Controller {
 			return badRequest(e.getMessage());
 		}
     }
+	
+	/*
+	 * Operation to get properties by country, sorted by City.
+	 */
+	@ApiOperation(
+			consumes = "application/json",
+			value = "Get all properties",
+			httpMethod = "GET"
+		)
+	    public Result findByCountry(String country) {
+			try {
+				//JsonNode body = request.body().asJson();
+				List<Property> properties = Property.find.query().where()
+				        .ilike("country", country)
+				        .orderBy("city asc")
+				        .setFirstRow(0)
+				        .setMaxRows(500)
+				        .findPagedList()
+				        .getList();
+		    	String result = mapper.writeValueAsString(properties); 
+		        return ok(result);
+			} catch (Exception e) {
+				return badRequest(e.getMessage());
+			}
+	    }
+	
 	@ApiOperation(
 			consumes = "application/json",
 			value = "Get property by id",
@@ -83,8 +109,8 @@ public class PropertyController extends Controller {
 		} catch (Exception e) {
 			return badRequest(e.getMessage());
 		}
-    }    
-	
+    }
+    
 	@ApiOperation(
 		consumes = "application/json",
 		value = "Create property",
@@ -93,7 +119,6 @@ public class PropertyController extends Controller {
 	@ApiImplicitParams({
 		@ApiImplicitParam(name = "body", value = "Property", required = true, dataType = "models.Property", paramType = "body")
 	})
-	
 	public Result add() {
 		try {
 	        JsonNode parsedBody = parseBody(request().body().asJson());
