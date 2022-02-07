@@ -43,7 +43,7 @@ public class PropertyController extends Controller {
 	
 	/*
 	 * Encountered a problem with Ebean and Swagger.
-	 * The following hack will remove _ebean_intercept from the request, so it can be validated accordingly.
+	 * The following hack will remove _ebean_intercept from the request, so it can be validated properly.
 	 */
 	public JsonNode parseBody(JsonNode body) {
         ObjectNode object = body.deepCopy();
@@ -55,24 +55,40 @@ public class PropertyController extends Controller {
 	@ApiOperation(
 		consumes = "application/json",
 		value = "Get all properties",
-		httpMethod = "GET",
-		response = Property.class
+		httpMethod = "GET"
 	)
     public Result properties() {
 		try {
 			List<Property> properties = Property.find.all();
-	    	String jsonString = mapper.writeValueAsString(properties); 
-	        return ok(jsonString);
+	    	String result = mapper.writeValueAsString(properties); 
+	        return ok(result);
 		} catch (Exception e) {
-			return badRequest("fail");
+			return badRequest(e.getMessage());
 		}
     }
+	@ApiOperation(
+			consumes = "application/json",
+			value = "Get property by id",
+			httpMethod = "GET",
+			response = Property.class
+	)
+    public Result findById(Integer id) {
+		try {
+			Property property = Property.find.byId(id);
+	        if (property == null) {
+	            return notFound("Not found!");
+	        }
+	    	String result = mapper.writeValueAsString(property); 
+	        return ok(result);
+		} catch (Exception e) {
+			return badRequest(e.getMessage());
+		}
+    }    
 	
 	@ApiOperation(
 		consumes = "application/json",
 		value = "Create property",
-		httpMethod = "POST",
-		response = Property.class
+		httpMethod = "POST"
 	)
 	@ApiImplicitParams({
 		@ApiImplicitParam(name = "body", value = "Property", required = true, dataType = "models.Property", paramType = "body")
@@ -88,28 +104,23 @@ public class PropertyController extends Controller {
 			Property property = propertyForm.get();
 			String jsonString = mapper.writeValueAsString(property);
 			
+			// Get coordinates using GeoApify
 			String url = "https://api.geoapify.com/v1/geocode/search?street=" + property.address + "&city=" + property.city + "&country=" + property.country + "&format=json&apiKey=e6e1ae81208d417180cf919148672041";
 			JsonNode response = ws.url(url).get().toCompletableFuture().get().asJson();
 			String coordinates = "[" + response.findValue("lon") + "," + response.findValue("lat") + "]";
 			property.coordinates = coordinates;
+			
 			property.save();
-			
 			return ok("Succesful!");
-			
-			//return ok(jsonString);
 		} catch (Exception e) {
 			return badRequest(e.getMessage());
 		}
-	}
-	public Result findById(Integer id) {
-		return ok(views.html.index.render());
 	}
 	
 	@ApiOperation(
 			consumes = "application/json",
 			value = "Edit property",
-			httpMethod = "PUT",
-			response = Property.class
+			httpMethod = "PUT"
 	)
 	@ApiImplicitParams({
 		@ApiImplicitParam(name = "body", value = "Property", required = true, dataType = "models.Property", paramType = "body")
@@ -117,7 +128,7 @@ public class PropertyController extends Controller {
 	public Result edit(Integer id) {
 		try {
 			Property property = Property.find.byId(id);
-	        if(property == null) {
+	        if (property == null) {
 	            return notFound("Not found!");
 	        }
 	        JsonNode parsedBody = parseBody(request().body().asJson());
@@ -133,12 +144,15 @@ public class PropertyController extends Controller {
 			property.city = updatedProperty.city;
 			property.country = updatedProperty.country;
 			property.description = updatedProperty.description;
-			property.coordinates = updatedProperty.coordinates;
+			
+			// Get coordinates using GeoApify
+			String url = "https://api.geoapify.com/v1/geocode/search?street=" + property.address + "&city=" + property.city + "&country=" + property.country + "&format=json&apiKey=e6e1ae81208d417180cf919148672041";
+			JsonNode response = ws.url(url).get().toCompletableFuture().get().asJson();
+			String coordinates = "[" + response.findValue("lon") + "," + response.findValue("lat") + "]";
+			property.coordinates = coordinates;
 			
 			property.update();
-			
-			String jsonString = mapper.writeValueAsString(property); 
-			return ok(jsonString);
+			return ok("Succesful!");
 		} catch (Exception e) {
 			return badRequest(e.getMessage());
 		}
