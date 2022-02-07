@@ -24,11 +24,16 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiImplicitParam;
 
+import play.libs.ws.*;
+import play.libs.ws.WSBodyReadables.*;
+import java.util.concurrent.CompletionStage;
+
 /**
  * This controller contains CRUD methods for Properties.
  */
 @Api(value = "/properties", produces = "application/json")
 public class PropertyController extends Controller {
+	@Inject WSClient ws;
 	
 	@Inject
     FormFactory formFactory;
@@ -81,9 +86,17 @@ public class PropertyController extends Controller {
 				return badRequest("Bad Request!");
 			}
 			Property property = propertyForm.get();
-			String jsonString = mapper.writeValueAsString(property); 
+			String jsonString = mapper.writeValueAsString(property);
+			
+			String url = "https://api.geoapify.com/v1/geocode/search?street=" + property.address + "&city=" + property.city + "&country=" + property.country + "&format=json&apiKey=e6e1ae81208d417180cf919148672041";
+			JsonNode response = ws.url(url).get().toCompletableFuture().get().asJson();
+			String coordinates = "[" + response.findValue("lon") + "," + response.findValue("lat") + "]";
+			property.coordinates = coordinates;
 			property.save();
-			return ok(jsonString);
+			
+			return ok("Succesful!");
+			
+			//return ok(jsonString);
 		} catch (Exception e) {
 			return badRequest(e.getMessage());
 		}
