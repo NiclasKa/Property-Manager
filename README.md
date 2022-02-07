@@ -11,3 +11,5 @@ To use Swagger-UI, head to:
 http://localhost:9000/api-docs/swagger-ui/index.html?url=http://localhost:9000/api-docs
 
 Run the evolutions!
+
+Tests can be run by running `test` in the sbt console.
